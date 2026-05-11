@@ -1,5 +1,9 @@
 # Viper
 
+This repository is adapted from the following different repositories:
+https://github.com/act3-ace/safe-autonomy-simulation.git
+https://github.com/Safe-RL-Team/viper-verifiable-rl-impl.git 
+
 Read the accompanying blog post [here](https://safe-rl-team.github.io/viper-verifiable-reinforcement-learning/).
 
 **V**erifiability via **I**terative **P**olicy **E**xt**R**action (2019) [paper](https://arxiv.org/abs/1805.08328)]
