@@ -1,3 +1,4 @@
+import os
 import warnings
 
 import gym
@@ -15,9 +16,21 @@ from model.tree_wrapper import TreeWrapper
 from test.evaluate import evaluate_policy
 from train.oracle import get_model_cls
 
+from torch.utils.tensorboard import SummaryWriter
+
 
 def train_viper(args):
     print(f"Training Viper on {args.env_name}")
+
+    log_name = (
+        f"VIPER_{args.env_name}_"
+        f"iter-{args.n_iter}_"
+        f"depth-{args.max_depth}_"
+        f"leaves-{args.max_leaves}_"
+        f"timesteps-{args.total_timesteps}"
+    )
+
+    writer = SummaryWriter(log_dir=f"./log/{log_name}")
 
     dataset = []
     policy = None
@@ -26,7 +39,10 @@ def train_viper(args):
 
     for i in tqdm(range(args.n_iter), disable=args.verbose > 0):
         beta = 1 if i == 0 else 0
-        dataset += sample_trajectory(args, policy, beta)
+
+        new_samples = sample_trajectory(args, policy, beta)
+
+        dataset += new_samples
 
         clf = DecisionTreeClassifier(ccp_alpha=0.0001, criterion="entropy", max_depth=args.max_depth,
                                      max_leaf_nodes=args.max_leaves)
@@ -45,7 +61,35 @@ def train_viper(args):
             print(f"Policy score: {mean_reward:0.4f} +/- {std_reward:0.4f}")
         rewards.append(mean_reward)
 
+        print(
+            f"VIPER iter {i}: "
+            f"mean_reward={mean_reward:.4f}, "
+            f"std_reward={std_reward:.4f}, "
+            f"dataset_size={len(dataset)}, "
+            f"new_samples={len(new_samples)}, "
+            f"tree_depth={clf.get_depth()}, "
+            f"tree_leaves={clf.get_n_leaves()}"
+        )
+
+        # TensorBoard scalar logs
+        writer.add_scalar("viper/mean_reward", mean_reward, i)
+        writer.add_scalar("viper/std_reward", std_reward, i)
+        writer.add_scalar("viper/dataset_size", len(dataset), i)
+        writer.add_scalar("viper/new_samples", len(new_samples), i)
+        writer.add_scalar("viper/tree_depth", clf.get_depth(), i)
+        writer.add_scalar("viper/tree_leaves", clf.get_n_leaves(), i)
+        writer.add_scalar("viper/beta", beta, i)
+
+        if len(weight) > 0:
+            writer.add_scalar("viper/sample_weight_mean", float(np.mean(weight)), i)
+            writer.add_scalar("viper/sample_weight_std", float(np.std(weight)), i)
+            writer.add_scalar("viper/sample_weight_min", float(np.min(weight)), i)
+            writer.add_scalar("viper/sample_weight_max", float(np.max(weight)), i)
+
+        writer.flush()
+
     print(f"Viper iteration complete. Dataset size: {len(dataset)}")
+    best_idx = int(np.argmax(rewards))
     best_policy = policies[np.argmax(rewards)]
     path = get_viper_path(args)
     print(f"Best policy:\t{np.argmax(rewards)}")
@@ -53,6 +97,16 @@ def train_viper(args):
     wrapper = TreeWrapper(best_policy)
     wrapper.print_info()
     wrapper.save(path)
+
+    final_step = args.n_iter
+
+    writer.add_scalar("viper/best_policy_index", best_idx, final_step)
+    writer.add_scalar("viper/best_mean_reward", float(np.max(rewards)), final_step)
+    writer.add_scalar("viper/best_tree_depth", best_policy.get_depth(), final_step)
+    writer.add_scalar("viper/best_tree_leaves", best_policy.get_n_leaves(), final_step)
+
+    writer.flush()
+    writer.close()
 
 
 def load_oracle_env(args):

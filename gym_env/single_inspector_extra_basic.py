@@ -909,6 +909,10 @@ class SimpleInspectionEnv(gym.Env):
         self.unsafe_zone_penalty_scale = 1.0
         self.no_new_point_penalty = -0.01
 
+        # logging
+        self.episode_reward = 0.0
+        self.episode_length = 0
+
         self.seed()
         self.reset()
 
@@ -1273,6 +1277,9 @@ class SimpleInspectionEnv(gym.Env):
         self.pos = np.array([50.0, 0.0, 0.0], dtype=np.float32)
         self.vel = np.zeros(3, dtype=np.float32)
 
+        self.episode_reward = 0.0
+        self.episode_length = 0
+
         self.sun_angle = 0.0
         self.t = 0
         self.status = "Running"
@@ -1387,7 +1394,12 @@ class SimpleInspectionEnv(gym.Env):
 
         obs = self._get_obs()
 
+        self.episode_length += 1
+        self.episode_reward += float(reward)
+
         info = {
+            "episode_reward": float(self.episode_reward),
+            "episode_length": int(self.episode_length),
             "status": self.status,
             "distance": distance_to_rso,
             "radius_error": radius_error,

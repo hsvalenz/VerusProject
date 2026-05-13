@@ -23,6 +23,13 @@ register(
     entry_point='gym_env.single_inspector_extra_basic:SimpleInspectionEnv',
     kwargs={'args': None}
 )
+
+register(
+    id='FuelSingleInspector-v0',
+    entry_point='gym_env.single_inspector_extra_basic_fuel:FuelInspectionEnv',
+    kwargs={'args': None}
+)
+
 def make_env(args, test_viper=False):
     if args.env_name == "PongNoFrameskip-v4":
         env = make_atari_env("PongNoFrameskip-v4", n_envs=args.n_env)
@@ -36,6 +43,8 @@ def make_env(args, test_viper=False):
     elif args.env_name == "SingleInspector-v0":
         return DummyVecEnv([lambda: Monitor(gym.make(args.env_name, args=args)) for _ in range(args.n_env)])
     elif args.env_name == "SimpleSingleInspector-v0":
+        return DummyVecEnv([lambda: Monitor(gym.make(args.env_name, args=args)) for _ in range(args.n_env)])
+    elif args.env_name == "FuelSingleInspector-v0":
         return DummyVecEnv([lambda: Monitor(gym.make(args.env_name, args=args)) for _ in range(args.n_env)])
 
     raise NotImplementedError(f"Environment {args.env_name} not implemented")
