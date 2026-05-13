@@ -76,6 +76,11 @@ For viper, the input features are the oberservation values and the output classe
 
 ## Usage
 
+First, create a python virtual environment based on `python3.10`. Once activated, pip install all requirements found in `requirements.txt:
+```
+pip install -r requirements.txt
+```
+
 The project is run through `main.py`, to see all available options:
 ```
 python3 main.py --help
